@@ -1,0 +1,343 @@
+#the aim of this script is build a consensus seq from sar-cov-2 virus in recent covis surge in US, and compare it
+# to sample seqeunces from Egypt
+#Firstly we will read the US sequences
+
+# we need to import SeqIO to read the seq
+from Bio import SeqIO
+file_path="C:/Users/Lenovo/Downloads/python/project/sequences_USA.fasta"
+
+#lets read the 10 US sequences, and put them in a list
+US_List = list(SeqIO.parse(file_path, format='fasta'))
+#checking the file has been read
+print(US_List[9].id)
+#### its working
+print(len(US_List))
+# its a list of 10 sequences that we will use to build consuses seq
+#we will make sure that 10 seqs have the same lenght
+print(len(US_List[0].seq))
+print(len(US_List[5].seq))
+print(len(US_List[2].seq))
+# all the 10 seq have the same length of 29762
+
+# now we will crete a consus sequence out of the 10 seq
+n = len(US_List[0])
+# we will make sure to add the ambigous nuclitde chartcers
+profile = { 'T':[0]*n,'G':[0]*n ,'C':[0]*n,'A':[0]*n,'N':[0]*n,'Y':[0]*n, 'W':[0]*n,'S':[0]*n }
+
+for seq in US_List:
+
+    for i, char in enumerate(seq):
+        profile[char][i] += 1
+
+consensus = ""
+for i in range(n):
+    max_count = 0
+    max_nt = 'x'
+    for nt in "ACGTNYWS":
+        if profile[nt][i] > max_count:
+            max_count = profile[nt][i]
+            max_nt = nt
+    consensus += max_nt
+print(consensus)
+for key, value in profile.items():
+     print(key,':', " ".join([str(x) for x in value] ))
+
+#Now the consensus is ready, lets check its type and length
+print(type(consensus))
+#its a string
+print(len(consensus))
+
+#Now lets read the Egyptian samples
+Eg="C:/Users/Lenovo/Downloads/python/project/sequences_Eg.fasta"
+Eg_List = list(SeqIO.parse(Eg, format='fasta'))
+print(Eg_List[1].seq)
+#its working, now lets check its length
+print(len(Eg_List[1].seq))
+print(len(Eg_List[9].seq))
+# its length is "29903"
+# now lets start comparing Eg seqs to the US consensus seq
+# we will start by looking at DNA stability, by calculating GC content
+
+##we will write a function to calculte the % of G,C,S characters in the seqs in another script, and call it
+from GC import gc_content
+#now lets calculate GC content of the consensus and egyptian samples
+print(gc_content(consensus))
+print(gc_content(Eg_List[0].seq))
+print(gc_content(Eg_List[1].seq))
+print(gc_content(Eg_List[2].seq))
+print(gc_content(Eg_List[3].seq))
+print(gc_content(Eg_List[4].seq))
+print(gc_content(Eg_List[5].seq))
+print(gc_content(Eg_List[6].seq))
+print(gc_content(Eg_List[7].seq))
+print(gc_content(Eg_List[8].seq))
+print(gc_content(Eg_List[9].seq))
+
+# as they all belong to the same virus, there is a miniml diffrence between the gc content of the seqs
+
+
+######
+#Now lets check the amino acid composition, so lets separate the seuences
+Eg1=Eg_List[0].seq
+Eg2=Eg_List[1].seq
+Eg3=Eg_List[2].seq
+Eg4=Eg_List[3].seq
+Eg5=Eg_List[4].seq
+Eg6=Eg_List[5].seq
+Eg7=Eg_List[6].seq
+Eg8=Eg_List[7].seq
+Eg9=Eg_List[8].seq
+Eg10=Eg_List[9].seq
+###
+from Bio.Seq import Seq
+#we will use seq modules functionalties to convert consenes to seq object, so we could manipulate it
+consensus=Seq(consensus)
+#now we will llok at the amino acid frequency in our seqs, we will use translate() to get the aa seq
+cons_pro=consensus.translate()
+print(cons_pro)
+Eg_pro1=Eg1.translate()
+Eg_pro2=Eg2.translate()
+Eg_pro3=Eg3.translate()
+Eg_pro4=Eg4.translate()
+Eg_pro5=Eg5.translate()
+Eg_pro6=Eg6.translate()
+Eg_pro7=Eg7.translate()
+Eg_pro8=Eg8.translate()
+Eg_pro9=Eg9.translate()
+Eg_pro10=Eg10.translate()
+
+#### we will import counter to calculate aa freq
+from collections import Counter
+Eg1_freq=Counter(Eg_pro1)
+Eg3_freq=Counter(Eg_pro3)
+Eg4_freq=Counter(Eg_pro4)
+con_freq=Counter(cons_pro)
+print(Eg1_freq)
+Eg2_freq=Counter(Eg_pro2)
+# lets plot aa freq it in a bar graph
+import matplotlib.pyplot as plt
+plt.bar(Eg1_freq.keys(), Eg1_freq.values(), color=['b', 'r', 'm', 'c'])
+plt.xlabel('Eg1/Amino Acid')
+plt.ylabel('Frequency')
+plt.title('Protein Sequence Frequency')
+plt.show()
+plt.bar(Eg2_freq.keys(), Eg2_freq.values(), color=['b', 'r', 'm', 'c'])
+plt.xlabel('ُEg2/Amino Acid')
+plt.ylabel('Frequency')
+plt.title('Protein Sequence Frequency')
+plt.show()
+plt.bar(Eg3_freq.keys(), Eg3_freq.values(), color=['b', 'r', 'm', 'c'] )
+plt.xlabel('Eg3/Amino Acid')
+plt.ylabel('Frequency')
+plt.title('Protein Sequence Frequency')
+plt.show()
+plt.bar(con_freq.keys(), con_freq.values(), color=['b', 'r', 'm', 'c'])
+plt.xlabel('Amino Acid')
+plt.ylabel('Frequency')
+plt.title('cons/Protein Sequence Frequency')
+plt.show()
+# leucine is the most common amino acid in all, but much higher freq in cons
+
+# now we will look at % sequence similarty between our consenses and the samples
+from seq_sim import sim
+print(sim(consensus, Eg1))
+#result= 99.79%
+print(sim(consensus, Eg2))
+#result=99.8%
+print(sim(consensus, Eg3))
+#result=99.75%
+print(sim(consensus, Eg4))
+#result=99.78%
+
+# US conssus and egy samples are quite similar, few point nuclutide polymorphism could account for the minor diffrences
+# we will run MSA use clustal
+import Bio.Align.Applications
+#from Bio.Align.Applications import ClustalwCommandline   # we used clustalW for alignment the 10 sequences with consensus seq.
+#clustalw_exe = r"C:\Program Files (x86)\ClustalW2\clustalw2.exe"
+#file_in = r"C:/Users/Lenovo/Downloads/python/project/sequences_EG.fasta"
+#clustalw_cline = ClustalwCommandline(clustalw_exe, infile=file_in)
+#stdout, stderr = clustalw_cline()
+
+
+# we will use the dnd file output to draw a phylogenetic tree to infer relationship between the seqs
+from Bio import Phylo
+file="C:/Users/Lenovo/Downloads/python/project/sequences_EG.dnd"
+tree=Phylo.read(file, "newick")
+Phylo.draw(tree)
+
+####method 2 to draw tree and print distance matrix
+from Bio import AlignIO
+#Open Alignment file
+with open(r"C:/Users/Lenovo/Downloads/python/project/sequences_EG (1).aln","r") as aln:
+        alignment = AlignIO.read(aln,"clustal")
+print(type(alignment))
+
+#Initiate Distance Calculator and Write the Distance Matrix
+from Bio.Phylo.TreeConstruction import DistanceCalculator
+calculator = DistanceCalculator('identity')
+distance_matrix =calculator.get_distance(alignment)
+print(distance_matrix)
+
+#Tree Construction
+from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
+constructor = DistanceTreeConstructor(calculator)
+Tree = constructor.build_tree(alignment)
+Tree.rooted = True
+print(Tree)
+
+#Tree Graphical Reprensentation with ascii
+Phylo.draw_ascii(Tree)
+
+#Tree Graphical Reprensentation (matplotlib required)
+import matplotlib
+import matplotlib.pyplot as plt
+fig = plt.figure(figsize=(13,5), dpi=100)
+matplotlib.rc('font', size=6)
+matplotlib.rc('xtick', labelsize=2)
+matplotlib.rc('ytick', labelsize=8)
+axes = fig.add_subplot(1,1,1)
+Phylo.draw(Tree, axes=axes)
+Phylo.write(Tree,'tree.xml','phyloxml')
+
+### and we will use the aln ouput to visulaize aligment and conserved regions in our script using Bokeh plotting library
+#source of this script:
+import os, io, random
+import string
+import numpy as np
+
+from Bio.Seq import Seq
+from Bio.Align import MultipleSeqAlignment
+from Bio import AlignIO, SeqIO
+
+import panel as pn
+import panel.widgets as pnw
+pn.extension()
+
+from bokeh.plotting import figure,show,output_file
+from bokeh.models import ColumnDataSource, Plot, Grid, Range1d
+from bokeh.models.glyphs import Text, Rect
+from bokeh.layouts import gridplot
+
+def make_seq(length=40):
+    return ''.join([random.choice(['A','C','T','G']) for i in range(length)])
+
+def mutate_seq(seq):
+    """mutate a sequence randomly"""
+    seq = list(seq)
+    pos = np.random.randint(1,len(seq),6)
+    for i in pos:
+        seq[i] = random.choice(['A','C','T','G'])
+    return ''.join(seq)
+
+def get_colors(seqs):
+    """make colors for bases in sequence"""
+    text = [i for s in list(seqs) for i in s]
+    clrs =  {'A':'red','T':'green','G':'orange','C':'blue','-':'white'}
+    colors = [clrs[i] for i in text]
+    return colors
+
+def muscle_alignment(seqs):
+    """Align 2 sequences with muscle"""
+    filename = 'temp.faa'
+    SeqIO.write(seqs, filename, "fasta")
+    name = os.path.splitext(filename)[0]
+    from Bio.Align.Applications import MuscleCommandline
+    cline = MuscleCommandline(input=filename, out=name+'.txt')
+    stdout, stderr = cline()
+    align = AlignIO.read(name+'.txt', 'fasta')
+    return align
+
+
+
+def view_alignment(aln, fontsize="9pt", plot_width=800):
+    """Bokeh sequence alignment view"""
+
+    #make sequence and id lists from the aln object
+    seqs = [rec.seq for rec in (aln)]
+    ids = [rec.id for rec in aln]
+    text = [i for s in list(seqs) for i in s]
+    colors = get_colors(seqs)
+    N = len(seqs[0])
+    S = len(seqs)
+    width = .4
+
+    x = np.arange(1,N+1)
+    y = np.arange(0,S,1)
+    #creates a 2D grid of coords from the 1D arrays
+    xx, yy = np.meshgrid(x, y)
+    #flattens the arrays
+    gx = xx.ravel()
+    gy = yy.flatten()
+    #use recty for rect coords with an offset
+    recty = gy+.5
+    h= 1/S
+    #now we can create the ColumnDataSource with all the arrays
+    source = ColumnDataSource(dict(x=gx, y=gy, recty=recty, text=text, colors=colors))
+    plot_height = len(seqs)*15+50
+    x_range = Range1d(0,N+1, bounds='auto')
+    if N>100:
+        viewlen=100
+    else:
+        viewlen=N
+    #view_range is for the close up view
+    view_range = (0,viewlen)
+    tools="xpan, xwheel_zoom, reset, save"
+
+    #entire sequence view (no text, with zoom)
+    p = figure(title=None, plot_width= plot_width, plot_height=50,
+               x_range=x_range, y_range=(0,S), tools=tools,
+               min_border=0, toolbar_location='below')
+    rects = Rect(x="x", y="recty",  width=1, height=1, fill_color="colors",
+                 line_color=None, fill_alpha=0.6)
+    p.add_glyph(source, rects)
+    p.yaxis.visible = False
+    p.grid.visible = False
+
+    #sequence text view with ability to scroll along x axis
+    p1 = figure(title=None, plot_width=plot_width, plot_height=plot_height,
+                x_range=view_range, y_range=ids, tools="xpan,reset",
+                min_border=0, toolbar_location='below')#, lod_factor=1)
+    glyph = Text(x="x", y="y", text="text", text_align='center',text_color="black",
+                text_font="monospace",text_font_size=fontsize)
+    rects = Rect(x="x", y="recty",  width=1, height=1, fill_color="colors",
+                line_color=None, fill_alpha=0.4)
+    p1.add_glyph(source, glyph)
+    p1.add_glyph(source, rects)
+
+    p1.grid.visible = False
+    p1.xaxis.major_label_text_font_style = "bold"
+    p1.yaxis.minor_tick_line_width = 0
+    p1.yaxis.major_tick_line_width = 0
+
+    p = gridplot([[p],[p1]], toolbar_location='below')
+    return p
+
+aln = AlignIO.read('C:/Users/Lenovo/Downloads/python/project/sequences_EG (1).aln','clustal')
+p = view_alignment(aln, plot_width=900)
+pn.pane.Bokeh(p)
+show(p)
+####
+
+#### Finally we want the find the nuclitde polymorpism  among the seqs, and write it to a text file
+# the function takes 2 seqs per time and write snps  and there position
+file="C:/Users/Lenovo/Downloads/python/project/sequences_EG (1).aln"
+from Bio import AlignIO
+y=0
+alignment = AlignIO.read(file, "clustal")
+for r in range(0,len(alignment[10].seq)):
+    if alignment[0,r] != alignment[2,r]:
+        if alignment[1, r] != "-" and alignment[2, r] != "-":
+
+            y=y+1
+            with open("mutations.txt", "a") as myfile:
+                myfile.write(alignment[1,r] + " " + str(r) + " " + alignment[2, r] + '\n')
+
+
+        else:
+              y=0
+
+### Thank you
+
+
+
+
