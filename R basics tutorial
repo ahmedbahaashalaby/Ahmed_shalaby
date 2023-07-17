@@ -1,0 +1,68 @@
+
+#vector 
+#######################################
+geneNames <- c("Gene_1", "Gene_2", "Gene_3","Gene_4")
+expression <- c(1000, 3000, 10000, 12000)
+geneLengths <- c(100, 3000, 200, 1000)
+names(expression) <- geneNames
+names(geneLengths) <- geneNames
+expression  
+geneLengths
+names(geneLengths[geneLengths == max(geneLengths)]) 
+names(geneLengths[which.max(geneLengths)])
+geneNames[geneLengths > 100 & expression > 10000]
+lne <- expression/geneLengths
+lne
+geneNames[lne > mean(lne)]
+
+
+#Matrix 
+########################## 
+geneNames <- c("Gene_1", "Gene_2", "Gene_3","Gene_4")
+expression <- c(1000, 3000, 10000, 12000)
+geneLengths <- c(100, 3000, 200, 1000)
+geneMatrix <- cbind(expression,geneLengths)
+rownames(geneMatrix) <- geneNames
+geneMatrix
+
+lne <- geneMatrix[,"expression"]/geneMatrix[,"geneLengths"]
+geneMatrix <- cbind(geneMatrix,lne)
+geneMatrix
+
+smallGeneMatrix <- geneMatrix[geneMatrix[,"geneLengths"] > 200,]
+smallGeneMatrix
+smallGeneMatrix <- geneMatrix[geneMatrix[,"geneLengths"] > 200 & geneMatrix[,"expression"] > 300,c("expression","lne")]
+smallGeneMatrix
+
+expressionSum <- sum(geneMatrix[geneMatrix[,"geneLengths"] > 100,"expression"])
+geneLengthSum <- sum(geneMatrix[geneMatrix[,"geneLengths"] > 100,"geneLengths"])
+
+expressionAndGeneLengthSum <- colSums(geneMatrix[geneMatrix[,"geneLengths"] > 100,c("expression","geneLengths")])
+expressionAndGeneLengthSum
+
+
+Factors and data frames 
+################################################  
+
+Annotation <- data.frame(geneNames=c("Gene_1", "Gene_2", "Gene_3","Gene_4","Gene_5"), ensembl=c("Ens001", "Ens003", "Ens006", "Ens007", "Ens010"),pathway=c("Glycolysis", "TGFb", "Glycolysis", "TGFb", "Glycolysis"),geneLengths=c(100, 3000, 200, 1000,1200))
+Sample1 <- data.frame(ensembl=c("Ens001", "Ens003", "Ens006","Ens010"),expression=c(1000, 3000, 10000,5000))
+Sample2 <- data.frame(ensembl=c("Ens001", "Ens003", "Ens006","Ens007","Ens010"),expression=c(1500, 1500, 17000,500,10000))
+AnnoSample1 <- merge(Annotation,Sample1,by.x=2,by.y=1,all=F) 
+AnnoSample1And2 <- merge(AnnoSample1,Sample2,by=1,all=F) 
+AnnoSample1And2
+AnnoSample1And2$Sample1_lne <- AnnoSample1And2$expression.x/AnnoSample1And2$geneLengths
+AnnoSample1And2$Sample2_lne <- AnnoSample1And2$expression.y/AnnoSample1And2$geneLengths
+AnnoSample1And2
+rownames(AnnoSample1And2) <- AnnoSample1And2$ensembl
+mean(c(AnnoSample1And2["Ens006","Sample1_lne"],AnnoSample1And2["Ens006","Sample2_lne"]))
+log2FoldChange <- log2(AnnoSample1And2$Sample2_lne) - log2(AnnoSample1And2$Sample1_lne)
+names(log2FoldChange) <- AnnoSample1And2$geneNames
+log2FoldChange
+sum(AnnoSample1And2[AnnoSample1And2$pathway == "Glycolysis","geneLengths"])
+
+#########################################
+
+
+
+
+
