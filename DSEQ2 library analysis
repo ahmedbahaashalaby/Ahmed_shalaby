@@ -1,0 +1,116 @@
+
+#library(edgeR) 
+getwd()
+
+library(DESeq2)
+library(ggplot2)
+library(RColorBrewer)
+library(NMF)
+#install.packages("NMF")
+
+
+# load data 
+data = as.matrix(read.csv("D:/r project 2/colon/methy",row.names = 1 , header = T , sep = " "))
+pheno = read.csv("D:/r project 2/clinical/clinical/colon",row.names = 1 , header=T , sep = "\t")
+
+
+dim(data)
+dim(pheno)
+
+# replace '-' with '.' in sample names of the pheno
+row_names = chartr("-",".",row.names(pheno))
+row.names(pheno) = row_names
+
+hist(data , col = "orange",main = "Histogram")
+
+hist(log2(data+1) , col="orange" , main="Histogram")
+
+table(pheno$vital_status)
+
+print(max(data))
+print(min(data))
+
+# check if the data is normalized (zigzag shape indicates non-normalized)
+boxplot(data[1:2,])
+
+# QQ plot to check normality
+qqnorm(data[3,])
+qqline(data[3,])
+
+
+# Shapiro test for normality check , low p-value indicates not normal
+shapiro.test(data[100,])
+
+# check for missing values in miRNA data
+sum(is.na(data))
+sum(is.null(data))
+sum(is.nan(data))
+
+# check for missing values in phenotype
+sum(is.na(pheno$vital_status))
+sum(is.null(pheno$vital_status))
+
+# drop samples with na values in class column in pheno dataframe
+new_pheno=pheno[!is.na(pheno$vital_status),]
+
+# select samples in both of data & pheno
+new_data = data[,colnames(data) %in% row.names(new_pheno)]
+new_pheno = new_pheno[colnames(new_data),]
+
+dim(new_data)
+dim(new_pheno)
+
+# convert data to integer
+# save data rownames bec. conversion will drop rownames
+genes = row.names(new_data)
+
+new_data = apply(round(new_data),2 , as.integer)
+row.names(new_data) = genes 
+write.csv(as.matrix(new_data),file="finalmethy.csv", quote=F,row.names=T)
+
+
+??DESeq2
+
+table(new_pheno$vital_status)
+#         DECEASED   LIVING 
+#           81      245 
+
+cond1 = "DECEASED"
+cond2 = "LIVING"
+
+
+#creat a deseq dataset object
+dds= DESeqDataSetFromMatrix( countData = new_data , colData = new_pheno, design = ~ vital_status)
+#run the deseq2 worflow
+dds.run = DESeq(dds)
+#specifying teh contrast (to make a res object based on two specific conditions)	
+res=results(dds.run, contrast = c("vital_status",cond1 ,cond2))
+
+# remove nulls
+res=as.data.frame(res[complete.cases(res), ])
+
+#chose the statstical significant differentaily expressed genes (DEGs) based
+#on the p adjusted value less than 0.05 and biological significance  based
+#on the fold change more than 2
+deseq.deg=res[res$padj < 0.05 & abs(res$log2FoldChange)>0.5,]
+
+#export the Degs into your current folder for further analysthis
+write.csv(as.matrix(deseq.deg),file="deseq.deg.csv", quote=F,row.names=T)
+
+par(mfrow=c(1,1))
+with(res,plot(log2FoldChange, -log10(padj), pch=20, main="Control vs infection DEGs"))
+with(subset(res, padj<.05 & (log2FoldChange)>0.5), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(res, padj<.05 & (log2FoldChange)< -0.5), points(log2FoldChange, -log10(padj), pch=20, col="red"))
+legend(x=-3.7,y=2.5,c("upregulated","downgulated"), cex=.8, bty="n", col=c("blue","red"),pch=19)
+
+
+
+
+dds2 = estimateSizeFactors(dds)
+normalized_counts = as.data.frame(counts(dds2, normalized=TRUE))
+
+exp.degs=as.matrix(normalized_counts[rownames(normalized_counts) %in% rownames(deseq.deg), ])
+aheatmap(log2(exp.degs+1), annCol =pheno$CL4, col = rev(brewer.pal(9,"RdBu")), main="mRNA Control vs infection")
+
+heatmap(log2(exp.degs+1))
+
