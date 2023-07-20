@@ -1,0 +1,66 @@
+library(Matrix)
+library(Seurat)
+library(CellChat)
+library(patchwork)
+library(tidyverse)
+options(stringsAsFactors = FALSE)
+
+
+#Read Data
+raw_data <- ReadMtx(mtx = 'matrix.mtx',
+                    features = 'features.tsv',
+                    cells = '/barcodes.tsv')
+#Check rownames and colnames
+raw_data[1:5,1:5]
+#Check for null values
+sum(is.na(raw_data))
+
+#Create Seurat Object
+seurob <- CreateSeuratObject(counts = raw_data, project = "CaCo Patients")
+
+
+#Preprocessing
+#MT percent Count
+seurob[["percent.mt"]] <- PercentageFeatureSet(seurob, pattern = "^MT")
+View(seurob@meta.data)
+#Ribosomal percent Count
+seurob[["percent.rb"]] <- PercentageFeatureSet(seurob, pattern = "^RP[SL]")
+View(seurob@meta.data)
+
+#Visualize percent MT and RB
+VlnPlot(seurob, features = c("nCount_RNA", "percent.mt", "nFeature_RNA"), ncol = 3)
+
+FeatureScatter(seurob, feature1 = "nCount_RNA", feature2 = "percent.mt", pt.size = 1)
+FeatureScatter(seurob, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", pt.size = 1) 
+FeatureScatter(seurob, feature1 = "nCount_RNA", feature2 = "percent.rb", pt.size = 1)
+
+#Filter
+seurob<- subset(seurob, subset = nFeature_RNA < 4000 & nCount_RNA < 9000 & percent.mt < 16)
+
+#Normalize
+seurob <- NormalizeData(seurob)
+
+Find Variable features
+seurob <- FindVariableFeatures(seurob, nfeatures = 2000, selection.method = 'vst')
+
+#Scaling
+seurob <- ScaleData(seurob)
+
+#Run Principle Component Analysis
+seurob <- RunPCA(seurob, assay = "RNA", features = VariableFeatures(seurob), npcs = 11)
+
+#Plot PCA
+DimPlot(seurob, reduction = "pca")
+
+#Determine Relevant PCs (n_pcs)
+ElbowPlot(seurob)
+
+#Clustering
+seurob <- FindNeighbors(seurob, dims = 1:6, k.param = 7)
+seurob <- FindClusters(seurob, resolution = 0.25)
+
+#Run UMAP
+seurob <- RunUMAP(seurob, dims = 1:6, n.components = 5, n.neighbors = 30)
+
+#Plot UMAP
+DimPlot(seurob, reduction = "umap",label = TRUE, pt.size = 1)
